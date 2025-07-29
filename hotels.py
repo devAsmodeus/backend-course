@@ -1,12 +1,21 @@
 from fastapi import APIRouter, Query, Path, Body
+from fastapi.openapi.models import Example
 
 from schemas.hotels import Hotel, HotelPATCH
 
 
 hotels = [
-    {"id": 1, "title": "Dubai", "name": "Dubai"},
-    {"id": 2, "title": "Sochi", "name": "Sochi"},
-    {"id": 3, "title": "Minsk", "name": "Minsk"}
+    {"id": 1, "title": "Dubai", "name": "dubai_emirate"},
+    {"id": 2, "title": "Sochi", "name": "sochi_city"},
+    {"id": 3, "title": "Minsk", "name": "minsk_city"},
+    {"id": 4, "title": "Мальдивы", "name": "maldives_country"},
+    {"id": 5, "title": "Сейшелы", "name": "seychelles_country"},
+    {"id": 6, "title": "Геленджик", "name": "gelendzhik_city"},
+    {"id": 7, "title": "Москва", "name": "moscow_city"},
+    {"id": 8, "title": "Питер", "name": "piter_city"},
+    {"id": 9, "title": "Казань", "name": "kazan_city"},
+    {"id": 10, "title": "Katar", "name": "katar_country"},
+    {"id": 11, "title": "Homel", "name": "homel_city"},
 ]
 
 
@@ -20,7 +29,9 @@ router = APIRouter(
 async def get_hotels(
         hotel_id: int | None = Query(default=None, description="Айди отеля"),
         hotel_title: str | None = Query(default=None, description="Название отеля"),
-        hotel_name: str | None = Query(default=None, description="Полное название отеля")
+        hotel_name: str | None = Query(default=None, description="Полное название отеля"),
+        page: int | None = Query(default=1, description="Страница"),
+        per_page: int | None = Query(default=5, description="Количество отелей на странице"),
 ) -> list[dict]:
     result = list()
     for hotel in hotels:
@@ -32,7 +43,7 @@ async def get_hotels(
             continue
         result.append(hotel)
     else:
-        return result
+        return result[per_page*(page-1):per_page*page]
 
 
 @router.delete("/{hotel_id}")
@@ -46,7 +57,29 @@ async def delete_hotel(
 
 @router.post("")
 async def create_hotel(
-        hotel_data: Hotel
+        hotel_data: Hotel = Body(openapi_examples={
+            "1": Example(**{
+                "summary": "Сочи",
+                "value": {
+                    "title": "Отель Сочи 5 звезд у моря",
+                    "name": "sochi_hotel"
+                }
+            }),
+            "2": Example(**{
+                "summary": "Астрахань",
+                "value": {
+                    "title": "Отель у бедуинов",
+                    "name": "bedouin_hotel"
+                }
+            }),
+            "3": Example(**{
+                "summary": "Заславль",
+                "value": {
+                    "title": "Придворный отель 2 звезды",
+                    "name": "street_hotel"
+                }
+            }),
+        })
 ) -> dict:
     global hotels
     hotels.append({
