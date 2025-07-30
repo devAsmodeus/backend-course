@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query, Path, Body, Depends
+from fastapi import APIRouter, Query, Path, Body
 from fastapi.openapi.models import Example
 
-from schemas.hotels import Hotel, HotelPATCH
-from dependencies import PaginationDep
+from src.schemas.hotels import Hotel, HotelPATCH
+from src.api.dependencies import PaginationDep
 
 
 hotels = [
