@@ -6,7 +6,7 @@ from src.api.dependencies import PaginationDep
 from src.database import async_session_maker, engine
 from src.models.hotels import HotelsOrm
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
 
 
 router = APIRouter(
@@ -20,15 +20,26 @@ async def get_hotels(
         pagination: PaginationDep,
         hotel_id: int | None = Query(default=None, description="Айди отеля"),
         hotel_title: str | None = Query(default=None, description="Название отеля"),
-        hotel_name: str | None = Query(default=None, description="Полное название отеля"),
+        hotel_location: str | None = Query(default=None, description="Местоположение отеля"),
 ):
-    async with async_session_maker() as db_session:
+    per_page = pagination.per_page or 5
+    async with (async_session_maker() as db_session):
         query = select(HotelsOrm)
+        if hotel_id:
+            query = query.filter_by(id=hotel_id)
+        if hotel_title:
+            query = query.where(func.lower(HotelsOrm.title).contains(hotel_title.lower()))
+        if hotel_location:
+            query = query.where(func.lower(HotelsOrm.location).contains(hotel_location.lower()))
+        query = (
+            query
+            .limit(per_page)
+            .offset(per_page * (pagination.page - 1))
+        )
+        print(query.compile(bind=engine, compile_kwargs={"literal_binds": True}))
         result = await db_session.execute(query)
         hotels_ = result.scalars().all()
         return hotels_
-
-    # return hotels_[pagination.per_page*(pagination.page-1):pagination.per_page*pagination.page]
 
 
 @router.delete("/{hotel_id}")
