@@ -66,14 +66,12 @@ async def create_hotel(
                 }
             }),
         })
-) -> dict:
+):
     async with async_session_maker() as db_session:
-        add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
-        print(add_hotel_stmt.compile(bind=engine, compile_kwargs={"literal_binds": True}))
-        await db_session.execute(add_hotel_stmt)
+        hotel = await HotelsRepository(db_session).add(hotel_data)
         await db_session.commit()
 
-    return {"message": "Complete"}
+    return {"message": "Complete", "data": hotel}
 
 
 @router.put("/{hotel_id}")
