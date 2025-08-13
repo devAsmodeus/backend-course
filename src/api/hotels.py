@@ -3,10 +3,7 @@ from fastapi.openapi.models import Example
 
 from src.schemas.hotels import Hotel, HotelPATCH
 from src.api.dependencies import PaginationDep
-from src.database import async_session_maker, engine
-from src.models.hotels import HotelsOrm
-
-from sqlalchemy import insert, select, func
+from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepository
 
 
@@ -35,9 +32,11 @@ async def get_hotels(
 @router.delete("/{hotel_id}")
 async def delete_hotel(
         hotel_id: int = Path(description="Айди отеля")
-) -> dict:
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel.get("id") != hotel_id]
+):
+    async with async_session_maker() as db_session:
+        await HotelsRepository(db_session).delete(id=hotel_id)
+        await db_session.commit()
+
     return {"message": "Complete"}
 
 
@@ -79,20 +78,11 @@ async def edit_hotel(
         hotel_data: Hotel,
         hotel_id: int = Path(description="Айди отеля"),
 ):
-    global hotels
-    result = list()
-    for hotel in hotels:
-        if hotel.get("id") == hotel_id:
-            result.append({
-                "id": hotel_id,
-                "title": hotel_data.title,
-                "name": hotel_data.name
-            })
-        else:
-            result.append(hotel)
-    else:
-        hotels = result
-        return {"message": "Complete"}
+    async with async_session_maker() as db_session:
+        await HotelsRepository(db_session).edit(hotel_data, id=hotel_id)
+        await db_session.commit()
+
+    return {"message": "Complete"}
 
 
 @router.patch("/{hotel_id}")
