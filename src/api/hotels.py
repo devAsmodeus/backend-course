@@ -29,6 +29,16 @@ async def get_hotels(
         )
 
 
+@router.get("/{hotel_id}")
+async def get_hotel(
+        hotel_id: int
+):
+    async with async_session_maker() as db_session:
+        hotel = await HotelsRepository(db_session).get_one_or_none(id=hotel_id)
+
+    return {"message": "Complete", "data": hotel}
+
+
 @router.delete("/{hotel_id}")
 async def delete_hotel(
         hotel_id: int = Path(description="Айди отеля")
@@ -90,20 +100,8 @@ async def update_hotel(
         hotel_data: HotelPATCH,
         hotel_id: int = Path(description="Айди отеля")
 ):
-    if hotel_data.title and hotel_data.name:
-        return {"message": "Forbidden"}
-    else:
-        global hotels
-        result = list()
-        for hotel in hotels:
-            if hotel.get("id") == hotel_id:
-                result.append({
-                    "id": hotel_id,
-                    "title": hotel_data.title if hotel_data.title else hotel.get("title"),
-                    "name": hotel_data.name if hotel_data.name else hotel.get("name")
-                })
-            else:
-                result.append(hotel)
-        else:
-            hotels = result
-            return {"message": "Complete"}
+    async with async_session_maker() as db_session:
+        await HotelsRepository(db_session).edit(hotel_data, exclude_unset=True, id=hotel_id)
+        await db_session.commit()
+
+    return {"message": "Complete"}
