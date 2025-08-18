@@ -20,6 +20,9 @@ class Settings(BaseSettings):
             f"{self.DB_NAME}"
         )
 
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env"
     )
