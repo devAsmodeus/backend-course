@@ -1,6 +1,6 @@
-from fastapi import APIRouter
-from passlib.context import CryptContext
+from fastapi import APIRouter, HTTPException, Response
 
+from src.services.auth import AuthService
 from src.schemas.users import UserRequestedAdd, UserAdd
 from src.repositories.users import UsersRepository
 from src.database import async_session_maker
@@ -11,17 +11,12 @@ router = APIRouter(
     tags=["Авторизация и аутентификация"]
 )
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
-
 
 @router.post("/register")
 async def register_user(
         data: UserRequestedAdd
 ):
-    hashed_password = pwd_context.hash(data.password)
+    hashed_password = AuthService().hash_password(data.password)
     new_user_data = UserAdd(
         email=data.email,
         hashed_password=hashed_password
@@ -32,3 +27,20 @@ async def register_user(
 
     return {"message": "Complete"}
 
+
+@router.post("/login")
+async def login_user(
+        data: UserRequestedAdd,
+        response: Response
+):
+    async with async_session_maker() as db_session:
+        user = await UsersRepository(db_session).get_user_with_hashed_password(email=data.email)
+        if not user:
+            raise HTTPException(status_code=401, detail="User unauthorized")
+        if not AuthService().verify_password(data.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Password incorrect")
+
+        access_token = AuthService().create_access_token({"user_id": user.id})
+
+    response.set_cookie("access_token", access_token)
+    return {"access_token": access_token}
