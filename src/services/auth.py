@@ -1,5 +1,6 @@
 import jwt
 
+from fastapi import HTTPException
 from passlib.context import CryptContext
 from datetime import datetime, timezone, timedelta
 
@@ -29,3 +30,15 @@ class AuthService:
 
     def hash_password(self, password: str) -> str:
         return self.pwd_context.hash(password)
+
+    def decode_token(self, token_: str) -> dict:
+        try:
+            return jwt.decode(
+                jwt=token_,
+                key=settings.JWT_SECRET_KEY,
+                algorithms=[settings.JWT_ALGORITHM]
+            )
+        except jwt.exceptions.DecodeError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        except jwt.exceptions.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
