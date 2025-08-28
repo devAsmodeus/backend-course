@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Path, Body
 from fastapi.openapi.models import Example
 
-from src.schemas.hotels import HotelPATCH, HotelAdd
+from src.schemas.hotels import HotelPatch, HotelAdd
 from src.api.dependencies import PaginationDep
 from src.database import async_session_maker
 from src.repositories.hotels import HotelsRepository
@@ -95,7 +95,7 @@ async def edit_hotel(
 
 @router.patch("/{hotel_id}")
 async def update_hotel(
-        hotel_data: HotelPATCH,
+        hotel_data: HotelPatch,
         hotel_id: int = Path(description="Айди отеля")
 ):
     async with async_session_maker() as db_session:

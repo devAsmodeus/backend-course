@@ -11,6 +11,6 @@ class Hotel(HotelAdd):
     id: int
 
 
-class HotelPATCH(BaseModel):
+class HotelPatch(BaseModel):
     title: Optional[str] = None
     location: Optional[str] = None
