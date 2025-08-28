@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Response
 
 from src.services.auth import AuthService
-from src.api.dependencies import UserIdDep
+from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.users import UserRequestedAdd, UserAdd
-from src.repositories.users import UsersRepository
-from src.database import async_session_maker
 
 
 router = APIRouter(
@@ -15,6 +13,7 @@ router = APIRouter(
 
 @router.post("/register")
 async def register_user(
+        db: DBDep,
         data: UserRequestedAdd
 ):
     hashed_password = AuthService().hash_password(data.password)
@@ -22,26 +21,27 @@ async def register_user(
         email=data.email,
         hashed_password=hashed_password
     )
-    async with async_session_maker() as db_session:
-        await UsersRepository(db_session).add(new_user_data)
-        await db_session.commit()
+    await db.users.add(new_user_data)
+    await db.commit()
 
     return {"message": "Complete"}
 
 
 @router.post("/login")
 async def login_user(
+        db: DBDep,
         data: UserRequestedAdd,
         response: Response
 ):
-    async with async_session_maker() as db_session:
-        user = await UsersRepository(db_session).get_user_with_hashed_password(email=data.email)
-        if not user:
-            raise HTTPException(status_code=401, detail="User unauthorized")
-        if not AuthService().verify_password(data.password, user.hashed_password):
-            raise HTTPException(status_code=401, detail="Password incorrect")
+    user = await db.users.get_user_with_hashed_password(
+        email=data.email
+    )
+    if not user:
+        raise HTTPException(status_code=401, detail="User unauthorized")
+    if not AuthService().verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Password incorrect")
 
-        access_token = AuthService().create_access_token({"user_id": user.id})
+    access_token = AuthService().create_access_token({"user_id": user.id})
 
     response.set_cookie("access_token", access_token)
     return {"access_token": access_token}
@@ -49,11 +49,13 @@ async def login_user(
 
 @router.get("/me")
 async def get_me(
+        db: DBDep,
         user_id: UserIdDep,
 ):
-    async with async_session_maker() as db_session:
-        user = await UsersRepository(db_session).get_one_or_none(id=user_id)
-        return user
+    user = await db.users.get_one_or_none(
+        id=user_id
+    )
+    return user
 
 
 @router.post("/logout")
