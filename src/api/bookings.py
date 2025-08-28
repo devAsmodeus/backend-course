@@ -11,7 +11,7 @@ router = APIRouter(
 
 
 @router.post("")
-async def booking_room(
+async def add_booking(
         db: DBDep,
         user_id: UserIdDep,
         booking_data: BookingsAddRequest
