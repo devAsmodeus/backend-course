@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Path, Body
 from fastapi.openapi.models import Example
 
-from src.schemas.rooms import RoomsPATCH, RoomsAdd
+from src.schemas.rooms import RoomAdd, RoomAddRequest, RoomPatch, RoomPatchRequest
 from src.database import async_session_maker
 from src.repositories.rooms import RoomsRepository
 
@@ -13,17 +13,17 @@ router = APIRouter(
 
 
 @router.get("/{hotel_id}/rooms")
-async def get_hotels(
+async def get_rooms(
         hotel_id: int,
 ):
     async with async_session_maker() as db_session:
-        return await RoomsRepository(db_session).get_all(
+        return await RoomsRepository(db_session).get_filtered(
             hotel_id=hotel_id,
         )
 
 
 @router.get("/{hotel_id}/rooms/{room_id}")
-async def get_hotel(
+async def get_room(
         hotel_id: int,
         room_id: int,
 ):
@@ -35,7 +35,7 @@ async def get_hotel(
 
 
 @router.delete("/{hotel_id}/rooms/{room_id}")
-async def delete_hotel(
+async def delete_room(
         hotel_id: int = Path(description="Айди отеля"),
         room_id: int = Path(description="Айди комнаты"),
 ):
@@ -50,14 +50,13 @@ async def delete_hotel(
 
 
 @router.post("/{hotel_id}/rooms")
-async def create_hotel(
-        hotel_data: RoomsAdd = Body(openapi_examples={
+async def create_room(
+        hotel_id: int,
+        room_data: RoomAddRequest = Body(openapi_examples={
             "1": Example(**{
                 "summary": "Сочи",
                 "value": {
-                    "hotel_id": 11,
                     "title": "Номер для одного",
-                    "description": 'None',
                     "price": 9_000,
                     "quantity": 1
                 }
@@ -65,7 +64,6 @@ async def create_hotel(
             "2": Example(**{
                 "summary": "Астрахань",
                 "value": {
-                    "hotel_id": 11,
                     "title": "Номер для двоих",
                     "description": "Большая комната с двухместной кроватью",
                     "price": 15_000,
@@ -75,7 +73,6 @@ async def create_hotel(
             "3": Example(**{
                 "summary": "Заславль",
                 "value": {
-                    "hotel_id": 1,
                     "title": "Номер морской вид",
                     "description": "Красивый вид на море",
                     "price": 23_000,
@@ -84,23 +81,24 @@ async def create_hotel(
             }),
         })
 ):
+    _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     async with async_session_maker() as db_session:
-        room = await RoomsRepository(db_session).add(hotel_data)
+        room = await RoomsRepository(db_session).add(_room_data)
         await db_session.commit()
 
     return {"message": "Complete", "data": room}
 
 
 @router.put("/{hotel_id}/rooms/{room_id}")
-async def edit_hotel(
-        hotel_data: RoomsAdd,
+async def edit_room(
+        room_data: RoomAddRequest,
         hotel_id: int = Path(description="Айди отеля"),
         room_id: int = Path(description="Айди комнаты"),
 ):
+    _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     async with async_session_maker() as db_session:
         await RoomsRepository(db_session).edit(
-            hotel_data,
-            hotel_id=hotel_id,
+            _room_data,
             id=room_id
         )
         await db_session.commit()
@@ -109,14 +107,15 @@ async def edit_hotel(
 
 
 @router.patch("/{hotel_id}/rooms/{room_id}")
-async def update_hotel(
-        hotel_data: RoomsPATCH,
+async def update_room(
+        room_data: RoomPatchRequest,
         hotel_id: int = Path(description="Айди отеля"),
         room_id: int = Path(description="Айди комнаты"),
 ):
+    _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset=True))
     async with async_session_maker() as db_session:
         await RoomsRepository(db_session).edit(
-            hotel_data,
+            _room_data,
             exclude_unset=True,
             hotel_id=hotel_id,
             id=room_id

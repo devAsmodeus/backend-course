@@ -2,20 +2,35 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-class RoomsAdd(BaseModel):
+class RoomAddRequest(BaseModel):
     title: str
-    description: str | None
+    description: str | None = None
     price: int
     quantity: int
 
 
-class Rooms(RoomsAdd):
-    id: int
+class RoomAdd(BaseModel):
     hotel_id: int
+    title: str
+    description: str | None = None
+    price: int
+    quantity: int
 
 
-class RoomsPATCH(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[int] = None
-    quantity: Optional[int] = None
+class Room(RoomAdd):
+    id: int
+
+
+class RoomPatchRequest(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    price: int | None = None
+    quantity: int | None = None
+
+
+class RoomPatch(BaseModel):
+    hotel_id: int | None = None
+    title: str | None = None
+    description: str | None = None
+    price: int | None = None
+    quantity: int | None = None
