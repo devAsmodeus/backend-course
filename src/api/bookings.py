@@ -18,7 +18,7 @@ async def get_bookings(
 
 
 @router.get("/me")
-async def get_bookings(
+async def get_my_bookings(
         db: DBDep,
         user_id: UserIdDep,
 ):
