@@ -9,7 +9,6 @@ class FacilitiesOrm(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(length=200))
-    hashed_password: Mapped[str] = mapped_column(String(length=200))
 
 
 class RoomsFacilitiesOrm(Base):
