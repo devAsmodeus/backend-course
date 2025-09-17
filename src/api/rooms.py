@@ -112,6 +112,10 @@ async def edit_room(
         _room_data,
         id=room_id
     )
+    await db.rooms_facilities.set_room_facilities(
+        room_id=room_id,
+        facility_ids=room_data.facilities_ids
+    )
     await db.commit()
 
     return {"message": "Complete"}
@@ -124,13 +128,20 @@ async def update_room(
         hotel_id: int = Path(description="Айди отеля"),
         room_id: int = Path(description="Айди комнаты"),
 ):
-    _room_data = RoomPatch(hotel_id=hotel_id, **room_data.model_dump(exclude_unset=True))
+    _room_data_dict = room_data.model_dump(exclude_unset=True)
+    _room_data = RoomPatch(hotel_id=hotel_id, **_room_data_dict)
     await db.rooms.edit(
         _room_data,
         exclude_unset=True,
         hotel_id=hotel_id,
         id=room_id
     )
+    if "facilities_ids" in _room_data_dict:
+        await db.rooms_facilities.set_room_facilities(
+            room_id=room_id,
+            facility_ids=_room_data_dict["facilities_ids"]
+        )
+
     await db.commit()
 
     return {"message": "Complete"}
