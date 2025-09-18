@@ -4,13 +4,13 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.repositories.base import BaseRepository
 from src.models.rooms import RoomsOrm
-from src.schemas.rooms import Room, RoomsWithRels
+from src.repositories.mappers.mappers import RoomDataMapper, RoomDataWithRelsMapper
 from src.repositories.utils import rooms_ids_for_booking
 
 
 class RoomsRepository(BaseRepository):
     model = RoomsOrm
-    schema = Room
+    mapper = RoomDataMapper
 
     async def get_filtered_by_time(
             self,
@@ -31,7 +31,7 @@ class RoomsRepository(BaseRepository):
         )
         result = await self.db_session.execute(query)
         return [
-            RoomsWithRels.model_validate(model_, from_attributes=True)
+            RoomDataWithRelsMapper.map_to_domain_entity(model_)
             for model_ in result.unique().scalars().all()
         ]
 
@@ -45,4 +45,4 @@ class RoomsRepository(BaseRepository):
         if (model_ := result.scalars().one_or_none()) is None:
             return None
         else:
-            return RoomsWithRels.model_validate(model_, from_attributes=True)
+            return RoomDataWithRelsMapper.map_to_domain_entity(model_)
