@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     REDIS_PORT: int
 
     @property
+    def redis_url(self):
+        return (
+            "redis://"
+            f"{self.REDIS_HOST}:"
+            f"{self.REDIS_PORT}"
+        )
+
+    @property
     def db_url(self) -> str:
         return (
             "postgresql+asyncpg://"
