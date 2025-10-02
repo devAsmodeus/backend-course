@@ -11,3 +11,10 @@ celery_instance = Celery(
     ],
     # result_backend=settings.redis_url
 )
+
+celery_instance.conf.beat_schedule = {
+    "The first": {
+        "task": "booking_today_checkin",
+        "schedule": 5,
+    }
+}
