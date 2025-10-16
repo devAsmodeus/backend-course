@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from pathlib import Path
 
+from src.api.dependencies import get_db
 from src.config import settings
 from src.database import Base, engine_null_pool, async_session_maker_null_pool
 from src.utils.db_manager import DBManager
@@ -19,39 +20,41 @@ def check_test_mode():
     assert settings.MODE == "TEST"
 
 
-@pytest.fixture(scope="session", autouse=True)
-async def db(check_test_mode) -> AsyncGenerator[DBManager, None]:
-    async with DBManager(session_factory=async_session_maker_null_pool) as db_connection:
-        yield db_connection
+async def get_db_null_pool():
+    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+        yield db
+
+
+@pytest.fixture(scope="function")
+async def db() -> AsyncGenerator[DBManager, None]:
+    async for db in get_db_null_pool():
+        yield db
+
+
+app.dependency_overrides[get_db] = get_db_null_pool
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def setup_database(check_test_mode, db):
+async def setup_database(check_test_mode):
     async with engine_null_pool.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
-
-@pytest.fixture(scope="session")
-async def mock_hotels(setup_database, db):
-    json_path = Path(__file__).parent / "mock_hotels.json"
-    with open(json_path, 'r', encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
-
-    hotels_ = [HotelAdd.model_validate(hotel) for hotel in json_data]
-    await db.hotels.add_bulk(hotels_)
-    await db.commit()
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def mock_rooms(mock_hotels, db):
     json_path = Path(__file__).parent / "mock_rooms.json"
     with open(json_path, 'r', encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
+        rooms_data = json.load(json_file)
 
-    rooms_ = [RoomAdd.model_validate(hotel) for hotel in json_data]
-    await db.rooms.add_bulk(rooms_)
-    await db.commit()
+    json_path = Path(__file__).parent / "mock_hotels.json"
+    with open(json_path, 'r', encoding='utf-8') as json_file:
+        hotels_data = json.load(json_file)
+
+    async with DBManager(session_factory=async_session_maker_null_pool) as db_:
+        hotels_ = [HotelAdd.model_validate(hotel) for hotel in hotels_data]
+        await db_.hotels.add_bulk(hotels_)
+
+        rooms_ = [RoomAdd.model_validate(hotel) for hotel in rooms_data]
+        await db_.rooms.add_bulk(rooms_)
+        await db_.commit()
 
 
 @pytest.fixture(scope="session")
