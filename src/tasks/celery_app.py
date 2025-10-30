@@ -4,10 +4,10 @@ from src.config import settings
 
 
 celery_instance = Celery(
-    'tasks',
+    "tasks",
     broker=settings.redis_url,
     include=[
-        'src.tasks.tasks',
+        "src.tasks.tasks",
     ],
     # result_backend=settings.redis_url
 )

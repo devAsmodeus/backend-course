@@ -23,9 +23,9 @@ class BookingsRepository(BaseRepository):
         return [self.mapper.map_to_domain_entity(booking) for booking in result.scalars().all()]
 
     async def add_booking(
-            self,
-            data: BookingsAdd,
-            hotel_id: int,
+        self,
+        data: BookingsAdd,
+        hotel_id: int,
     ):
         rooms_ids_to_get = rooms_ids_for_booking(
             date_from=data.date_from,

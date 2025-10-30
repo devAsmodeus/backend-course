@@ -6,16 +6,13 @@ from src.api.dependencies import DBDep
 from src.tasks.tasks import test_tasks
 
 
-router = APIRouter(
-    prefix="/facilities",
-    tags=["Удобства в номерах"]
-)
+router = APIRouter(prefix="/facilities", tags=["Удобства в номерах"])
 
 
 @router.get("")
 @cache(expire=10)
 async def get_facilities(
-        db: DBDep,
+    db: DBDep,
 ):
     test_tasks.delay()
     return await db.facilities.get_all()
@@ -23,12 +20,10 @@ async def get_facilities(
 
 @router.post("")
 async def create_facility(
-        db: DBDep,
-        facility_data: FacilitiesAdd,
+    db: DBDep,
+    facility_data: FacilitiesAdd,
 ):
-    facility = await db.facilities.add(
-        facility_data
-    )
+    facility = await db.facilities.add(facility_data)
     await db.commit()
 
     return {"message": "Complete", "data": facility}

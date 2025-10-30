@@ -1,5 +1,5 @@
 from sqlalchemy import select, insert, update, delete
-from  pydantic import BaseModel
+from pydantic import BaseModel
 
 from src.repositories.mappers.base import DataMapper
 
@@ -12,16 +12,9 @@ class BaseRepository:
         self.db_session = db_session
 
     async def get_filtered(self, *filter_, **filter_by):
-        query = (
-            select(self.model)
-            .filter(*filter_)
-            .filter_by(**filter_by)
-        )
+        query = select(self.model).filter(*filter_).filter_by(**filter_by)
         result = await self.db_session.execute(query)
-        return [
-            self.mapper.map_to_domain_entity(model_)
-            for model_ in result.scalars().all()
-        ]
+        return [self.mapper.map_to_domain_entity(model_) for model_ in result.scalars().all()]
 
     async def get_all(self, *args, **kwargs):
         return await self.get_filtered()
