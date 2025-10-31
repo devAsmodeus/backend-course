@@ -1,6 +1,8 @@
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy import select, insert, update, delete
 from pydantic import BaseModel
 
+from src.exceptions import ObjectNotFoundException
 from src.repositories.mappers.base import DataMapper
 
 
@@ -26,6 +28,15 @@ class BaseRepository:
             return None
         else:
             return self.mapper.map_to_domain_entity(model_)
+
+    async def get_one(self, **filter_by):
+        query = select(self.model).filter_by(**filter_by)
+        result = await self.db_session.execute(query)
+        try:
+            model_ = result.scalar_one()
+        except NoResultFound:
+            raise ObjectNotFoundException
+        return self.mapper.map_to_domain_entity(model_)
 
     async def add(self, data: BaseModel):
         add_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
