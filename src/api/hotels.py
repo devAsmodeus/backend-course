@@ -1,8 +1,14 @@
 from datetime import date
+
 from fastapi import APIRouter, Query, Path, Body
 from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
+from src.exceptions import (
+    check_date_to_after_date_from,
+    ObjectNotFoundException,
+    HotelNotFoundHTTPException
+)
 from src.schemas.hotels import HotelPatch, HotelAdd
 from src.api.dependencies import PaginationDep, DBDep
 
@@ -20,6 +26,7 @@ async def get_hotels(
     hotel_title: str | None = Query(default=None, description="Название отеля"),
     hotel_location: str | None = Query(default=None, description="Местоположение отеля"),
 ):
+    check_date_to_after_date_from(date_from, date_to)
     per_page = pagination.per_page or 5
     return await db.hotels.get_filtered_by_time(
         date_from=date_from,
@@ -36,7 +43,10 @@ async def get_hotel(
     hotel_id: int,
     db: DBDep,
 ):
-    return await db.hotels.get_one_or_none(id=hotel_id)
+    try:
+        return await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HotelNotFoundHTTPException
 
 
 @router.delete("/{hotel_id}")
@@ -44,6 +54,11 @@ async def delete_hotel(
     db: DBDep,
     hotel_id: int = Path(description="Айди отеля"),
 ):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HotelNotFoundHTTPException
+
     await db.hotels.delete(id=hotel_id)
     await db.commit()
 
@@ -97,6 +112,11 @@ async def edit_hotel(
     hotel_data: HotelAdd,
     hotel_id: int = Path(description="Айди отеля"),
 ):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HotelNotFoundHTTPException
+
     await db.hotels.edit(hotel_data, id=hotel_id)
     await db.commit()
 
@@ -107,6 +127,11 @@ async def edit_hotel(
 async def update_hotel(
     db: DBDep, hotel_data: HotelPatch, hotel_id: int = Path(description="Айди отеля")
 ):
+    try:
+        await db.hotels.get_one(id=hotel_id)
+    except ObjectNotFoundException:
+        raise HotelNotFoundHTTPException
+
     await db.hotels.edit(hotel_data, exclude_unset=True, id=hotel_id)
     await db.commit()
 
