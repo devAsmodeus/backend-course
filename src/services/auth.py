@@ -5,9 +5,10 @@ from passlib.context import CryptContext
 from datetime import datetime, timezone, timedelta
 
 from src.config import settings
+from src.services.base import BaseService
 
 
-class AuthService:
+class AuthService(BaseService):
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

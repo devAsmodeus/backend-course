@@ -6,7 +6,7 @@ import pytest
     argvalues=[
         ('catpac@dog.com', '12345678', 200),
         ('catpac@dag.com', '123456', 200),
-        ('catpac@dag.com', '123456', 400),
+        ('catpac@dag.com', '123456', 409),
         ('cat', '123456', 422),
     ]
 )

@@ -13,6 +13,14 @@ class ObjectNotFoundException(HasBookedException):
     detail = 'Object not found'
 
 
+class HotelNotFoundException(ObjectNotFoundException):
+    detail = 'Hotel not found'
+
+
+class RoomNotFoundException(ObjectNotFoundException):
+    detail = 'Room not found'
+
+
 class ObjectAlreadyExistsException(HasBookedException):
     detail = 'Object already exists'
 
