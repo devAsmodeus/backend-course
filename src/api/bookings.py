@@ -1,47 +1,30 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from src.exceptions import (
-    ObjectNotFoundException,
     RoomCannotBeBookedException,
     RoomNotFoundHTTPException
 )
-from src.schemas.bookings import BookingsAddRequest, BookingsAdd
+from src.schemas.bookings import BookingsAddRequest
 from src.api.dependencies import UserIdDep, DBDep
-
+from src.services.bookings import BookingService
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование номеров"])
 
 
 @router.get("")
-async def get_bookings(
-    db: DBDep,
-):
-    return await db.bookings.get_all()
+async def get_bookings(db: DBDep):
+    return await BookingService(db).get_bookings()
 
 
 @router.get("/me")
-async def get_my_bookings(
-    db: DBDep,
-    user_id: UserIdDep,
-):
-    return await db.bookings.get_filtered(user_id=user_id)
+async def get_my_bookings(db: DBDep, user_id: UserIdDep):
+    return await BookingService(db).get_my_bookings(user_id)
 
 
 @router.post("")
 async def add_booking(db: DBDep, user_id: UserIdDep, booking_data: BookingsAddRequest):
     try:
-        room = await db.rooms.get_one(id=booking_data.room_id)
-    except ObjectNotFoundException:
+        booking = await BookingService(db).add_booking(user_id, booking_data)
+    except RoomCannotBeBookedException:
         raise RoomNotFoundHTTPException
-
-    _booking_data = BookingsAdd(user_id=user_id, price=room.price, **booking_data.model_dump())
-    try:
-        booking = await db.bookings.add_booking(
-            data=_booking_data,
-            hotel_id=room.hotel_id,
-        )
-    except RoomCannotBeBookedException as ex:
-        raise HTTPException(status_code=409, detail=ex.detail)
-
-    await db.commit()
     return {"message": "Complete", "data": booking}

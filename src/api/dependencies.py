@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from src.database import async_session_maker
+from src.exceptions import NoAccessTokenHTTPException, IncorrectTokenException, IncorrectTokenHTTPException
 from src.utils.db_manager import DBManager
 from src.services.auth import AuthService
 
@@ -22,11 +23,14 @@ def get_token(request: Request) -> str:
     if access_token := request.cookies.get("access_token"):
         return access_token
     else:
-        raise HTTPException(status_code=401, detail="User unauthorized")
+        raise NoAccessTokenHTTPException
 
 
 def get_current_user_id(access_token: str = Depends(get_token)) -> int:
-    data = AuthService().decode_token(access_token)
+    try:
+        data = AuthService().decode_token(access_token)
+    except IncorrectTokenException:
+        raise IncorrectTokenHTTPException
     return data["user_id"]
 
 
